@@ -139,7 +139,7 @@ class Predictor:
         chunked_sources = []
         progress_bar = tqdm(total=len(mixes))
         progress_bar.set_description("Processing")
-        
+
         for mix in mixes:
             cmix = mixes[mix]
             sources = []
@@ -158,11 +158,10 @@ class Predictor:
                 mix_waves.append(waves)
                 i += gen_size
             mix_waves = torch.tensor(mix_waves, dtype=torch.float32).to(cpu)
-            
+
             with torch.no_grad():
                 _ort = self.model
                 spek = model.stft(mix_waves)
-                
 
                 if self.args.denoise:
                     spec_pred = (
@@ -174,7 +173,7 @@ class Predictor:
                     tar_waves = model.istft(
                         torch.tensor(_ort.run(None, {"input": spek.cpu().numpy()})[0])
                     )
-                    
+
                 tar_signal = (
                     tar_waves[:, :, trim:-trim]
                     .transpose(0, 1)
@@ -191,12 +190,12 @@ class Predictor:
                 progress_bar.update(1)
 
             chunked_sources.append(sources)
-            
+
         _sources = np.concatenate(chunked_sources, axis=-1)
         progress_bar.close()
         return _sources
 
-    def prediction(self, m, vocal_root, others_root, format):    
+    def prediction(self, m, vocal_root, others_root, format):
         os.makedirs(vocal_root, exist_ok=True)
         os.makedirs(others_root, exist_ok=True)
         basename = os.path.basename(m)

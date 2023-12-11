@@ -326,8 +326,8 @@ def uvr(model_name, inp_root, save_root_vocal, paths, save_root_ins, agg, format
     print("paths: ", paths)
     print("save_root_ins: ", save_root_ins)
     print("agg: ", agg)
-    print("format0: ", format0)      
-    
+    print("format0: ", format0)
+
     infos = []
     try:
         inp_root = inp_root.strip(" ").strip('"').strip("\n").strip('"').strip(" ")

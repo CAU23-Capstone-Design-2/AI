@@ -149,7 +149,7 @@ class Predictor:
         chunked_sources = []
         progress_bar = tqdm(total=len(mixes))
         progress_bar.set_description("Processing")
-        
+
         for mix in mixes:
             cmix = mixes[mix]
             sources = []
@@ -168,15 +168,15 @@ class Predictor:
                 mix_waves.append(waves)
                 i += gen_size
             mix_waves = torch.tensor(mix_waves, dtype=torch.float32).to(device)
-            
+
             print("mix_waves device: " + str(mix_waves.device))
-            
+
             with torch.no_grad():
                 _ort = self.model
                 spek = model.stft(mix_waves)
-                
+
                 print("spek device: " + str(spek.device))
-                
+
                 if self.args.denoise:
                     print("denoise")
                     print("spec_pred start")
@@ -188,9 +188,11 @@ class Predictor:
                     tar_waves = model.istft(torch.tensor(spec_pred).to(device))
                 else:
                     tar_waves = model.istft(
-                        torch.tensor(_ort.run(None, {"input": spek.cpu().numpy()})[0]).to(device)
+                        torch.tensor(
+                            _ort.run(None, {"input": spek.cpu().numpy()})[0]
+                        ).to(device)
                     )
-                    
+
                 print("tar_waves device: " + str(tar_waves.device))
                 #   File "/home/snark/dev/jiwoo/RVC/RVC-Model/MDXNet.py", line 197, in demix_base
                 #    tar_waves[:, :, trim:-trim]
@@ -198,7 +200,7 @@ class Predictor:
 
                 # Tensor.cpu() to copy the tensor to host memory first
                 tar_waves = tar_waves.cpu()
-                
+
                 tar_signal = (
                     tar_waves[:, :, trim:-trim]
                     .transpose(0, 1)
@@ -215,21 +217,21 @@ class Predictor:
                 progress_bar.update(1)
 
             chunked_sources.append(sources)
-            
+
         _sources = np.concatenate(chunked_sources, axis=-1)
         progress_bar.close()
         return _sources
 
     def prediction(self, m, vocal_root, others_root, format):
         print("prediction")
-        print('vocal_root: ' + vocal_root)
-        print('others_root: ' + others_root)
+        print("vocal_root: " + vocal_root)
+        print("others_root: " + others_root)
         # GPU가 사용중인지 확인
         print("torch.cuda.is_available(): " + str(torch.cuda.is_available()))
         # GPU 이름 출력
         print("torch.cuda.get_device_name(): " + str(torch.cuda.get_device_name()))
-#        print("self.model info:" + self.model.__dict__)
-              
+        #        print("self.model info:" + self.model.__dict__)
+
         os.makedirs(vocal_root, exist_ok=True)
         os.makedirs(others_root, exist_ok=True)
         basename = os.path.basename(m)
@@ -282,7 +284,7 @@ class MDXNetDereverb:
         self.pred = Predictor(self)
 
     def _path_audio_(self, input, vocal_root, others_root, format):
-        print('_path_audio')
+        print("_path_audio")
         self.pred.prediction(input, vocal_root, others_root, format)
 
 

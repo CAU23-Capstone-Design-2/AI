@@ -1,8 +1,9 @@
-'''
+"""
 python myinfer.py 0 "C:\Temp\vocal\eleven_Vocals.wav" None rmvpe "result.wav" "weights/IU_99000.pth" 0.75 cuda:0 True
 python myinfer.py abcd.wav 1.pth
-'''
-import os,sys,pdb,torch
+"""
+import os, sys, pdb, torch
+
 now_dir = os.getcwd()
 sys.path.append(now_dir)
 import argparse
@@ -10,8 +11,10 @@ import glob
 import sys
 import torch
 from multiprocessing import cpu_count
+
+
 class Config:
-    def __init__(self,device,is_half):
+    def __init__(self, device, is_half):
         self.device = device
         self.is_half = is_half
         self.n_cpu = 0
@@ -88,23 +91,22 @@ class Config:
         return x_pad, x_query, x_center, x_max
 
 
+vocal_file_name = sys.argv[2]  # GnIagDvjwpM.wav
+model_name = sys.argv[1]  # ./weights/ + jiwoo.pth
+user_id = model_name[:-4]  # jiwoo
+model_path = "./weights/" + model_name  # ./weights/jiwoo.pth
 
-vocal_file_name = sys.argv[2] # GnIagDvjwpM.wav
-model_name = sys.argv[1] # ./weights/ + jiwoo.pth
-user_id = model_name[:-4] # jiwoo
-model_path = './weights/' + model_name # ./weights/jiwoo.pth
-
-input_path = './dereverb/' + vocal_file_name # ./dereverb/GnIagDvjwpM.wav
-inst_path = './inst/' + vocal_file_name # ./inst/GnIagDvjwpM.wav
+input_path = "./dereverb/" + vocal_file_name  # ./dereverb/GnIagDvjwpM.wav
+inst_path = "./inst/" + vocal_file_name  # ./inst/GnIagDvjwpM.wav
 index_path = None
-f0method = 'rmvpe'
-opt_path = './inference_result/' + f"{user_id}_{vocal_file_name}"
+f0method = "rmvpe"
+opt_path = "./inference_result/" + f"{user_id}_{vocal_file_name}"
 index_rate = 0.5
-device = 'cuda:0'
+device = "cuda:0"
 is_half = True
 f0up_key = 0
 
-'''
+"""
 f0up_key=sys.argv[1]
 vocal_file_name=sys.argv[2]
 input_path = './dereverb/' + vocal_file_name
@@ -116,46 +118,60 @@ model_path=sys.argv[6]
 index_rate=float(sys.argv[7])
 device=sys.argv[8]
 is_half=bool(sys.argv[9])
-'''
+"""
 print(sys.argv)
 
 
-config=Config(device,is_half)
-now_dir=os.getcwd()
+config = Config(device, is_half)
+now_dir = os.getcwd()
 sys.path.append(now_dir)
 from vc_infer_pipeline import VC
-from lib.infer_pack.models import SynthesizerTrnMs256NSFsid, SynthesizerTrnMs256NSFsid_nono
+from lib.infer_pack.models import (
+    SynthesizerTrnMs256NSFsid,
+    SynthesizerTrnMs256NSFsid_nono,
+)
+
 # from lib.audio import load_audio
 from my_utils import load_audio
 from fairseq import checkpoint_utils
 from scipy.io import wavfile
 
-hubert_model=None
+hubert_model = None
+
+
 def load_hubert():
     global hubert_model
-    models, saved_cfg, task = checkpoint_utils.load_model_ensemble_and_task(["hubert_base.pt"],suffix="",)
+    models, saved_cfg, task = checkpoint_utils.load_model_ensemble_and_task(
+        ["hubert_base.pt"],
+        suffix="",
+    )
     hubert_model = models[0]
     hubert_model = hubert_model.to(device)
-    if(is_half):hubert_model = hubert_model.half()
-    else:hubert_model = hubert_model.float()
+    if is_half:
+        hubert_model = hubert_model.half()
+    else:
+        hubert_model = hubert_model.float()
     hubert_model.eval()
 
-def vc_single(sid,input_audio,f0_up_key,f0_file,f0_method,file_index,index_rate):
-    global tgt_sr,net_g,vc,hubert_model
-    if input_audio is None:return "You need to upload an audio", None
+
+def vc_single(sid, input_audio, f0_up_key, f0_file, f0_method, file_index, index_rate):
+    global tgt_sr, net_g, vc, hubert_model
+    if input_audio is None:
+        return "You need to upload an audio", None
     f0_up_key = int(f0_up_key)
-    audio=load_audio(input_audio,16000)
+    audio = load_audio(input_audio, 16000)
     times = [0, 0, 0]
-    if(hubert_model==None):load_hubert()
+    if hubert_model == None:
+        load_hubert()
     if_f0 = cpt.get("f0", 1)
     # audio_opt=vc.pipeline(hubert_model,net_g,sid,audio,times,f0_up_key,f0_method,file_index,file_big_npy,index_rate,if_f0,f0_file=f0_file)
-    
-#    audio_opt=vc.pipeline(hubert_model,net_g,sid,audio,times,f0_up_key,f0_method,file_index,index_rate,if_f0,f0_file=f0_file)
+
+    #    audio_opt=vc.pipeline(hubert_model,net_g,sid,audio,times,f0_up_key,f0_method,file_index,index_rate,if_f0,f0_file=f0_file)
     input_audio_path = input_audio
     filter_radius = 3
     resample_sr = 0
     rms_mix_rate = 0.25
-    version = 'v1'
+    version = "v1"
     protect = 0.33
     f0_file = None
     file_index = ""
@@ -186,28 +202,30 @@ def vc_single(sid,input_audio,f0_up_key,f0_file,f0_method,file_index,index_rate)
 
 
 def get_vc(model_path):
-    global n_spk,tgt_sr,net_g,vc,cpt,device,is_half
-    print("loading pth %s"%model_path)
+    global n_spk, tgt_sr, net_g, vc, cpt, device, is_half
+    print("loading pth %s" % model_path)
     cpt = torch.load(model_path, map_location="cpu")
     tgt_sr = cpt["config"][-1]
-    cpt["config"][-3]=cpt["weight"]["emb_g.weight"].shape[0]#n_spk
-    if_f0=cpt.get("f0",1)
-    if(if_f0==1):
+    cpt["config"][-3] = cpt["weight"]["emb_g.weight"].shape[0]  # n_spk
+    if_f0 = cpt.get("f0", 1)
+    if if_f0 == 1:
         net_g = SynthesizerTrnMs256NSFsid(*cpt["config"], is_half=is_half)
     else:
         net_g = SynthesizerTrnMs256NSFsid_nono(*cpt["config"])
     del net_g.enc_q
     print(net_g.load_state_dict(cpt["weight"], strict=False))  # 不加这一行清不干净，真奇葩
     net_g.eval().to(device)
-    if (is_half):net_g = net_g.half()
-    else:net_g = net_g.float()
+    if is_half:
+        net_g = net_g.half()
+    else:
+        net_g = net_g.float()
     vc = VC(tgt_sr, config)
-    n_spk=cpt["config"][-3]
+    n_spk = cpt["config"][-3]
     # return {"visible": True,"maximum": n_spk, "__type__": "update"}
 
 
 get_vc(model_path)
-wav_opt=vc_single(0,input_path,f0up_key,None,f0method,index_path,index_rate)
+wav_opt = vc_single(0, input_path, f0up_key, None, f0method, index_path, index_rate)
 wavfile.write(opt_path, tgt_sr, wav_opt)
 
 # 만약 배경음악이 .flac 확장자라면 .wav 로 변환
@@ -215,25 +233,29 @@ wavfile.write(opt_path, tgt_sr, wav_opt)
 # ./dereverb/{vocal_file_name} 와 ./inst/{vocal_file_name} 을 합성
 from pydub import AudioSegment
 
-def combine_wav(vocal_path, inst_path,output_path):
+
+def combine_wav(vocal_path, inst_path, output_path):
     vocal = AudioSegment.from_wav(vocal_path)
     inst = AudioSegment.from_wav(inst_path)
     combined = vocal.overlay(inst)
-    combined.export(output_path, format='wav')
+    combined.export(output_path, format="wav")
+
 
 def flac_to_wav(input_flac):
-    audio = AudioSegment.from_file(input_flac, format = "flac")
+    audio = AudioSegment.from_file(input_flac, format="flac")
     output_wav = input_flac.replace(".flac", ".wav")
-    audio.export(output_wav, format = "wav")
+    audio.export(output_wav, format="wav")
+
 
 if inst_path[-4:] == "flac":
     flac_to_wav(inst_path)
     inst_path = inst_path.replace(".flac", ".wav")
-    
-combine_wav(opt_path,inst_path,opt_path)
+
+combine_wav(opt_path, inst_path, opt_path)
 
 # opt_path 파일을 mp3 파일로 변환해서 하나 더 생성
 from pydub import AudioSegment
+
 sound = AudioSegment.from_wav(opt_path)
 sound.export(opt_path[:-4] + ".mp3", format="mp3")
 

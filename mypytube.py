@@ -5,9 +5,10 @@ import argparse
 import pytube
 
 
-ROOT_DIR = os.path.abspath('./')
+ROOT_DIR = os.path.abspath("./")
 
-def pytube(url,name):
+
+def pytube(url, name):
     from pytube import YouTube
     from pydub import AudioSegment
 
@@ -17,24 +18,26 @@ def pytube(url,name):
         print("Connection Error")
 
     # 영상 다운로드, music/{name} 저장
-    yt.streams.filter(only_audio=True).first().download(filename = f"./music/{name}")
+    yt.streams.filter(only_audio=True).first().download(filename=f"./music/{name}")
 
     # 다운로드된 음서파일을 wav 파일로 변환
-    AudioSegment.from_file(f'./music/{name}').export(f'./music/{name}.wav', format='wav')
+    AudioSegment.from_file(f"./music/{name}").export(
+        f"./music/{name}.wav", format="wav"
+    )
     os.remove(f"./music/{name}")
 
-    print('Download {} Complete'.format(yt.title))
-    print('Saved at ./music/{}.wav'.format(name))
+    print("Download {} Complete".format(yt.title))
+    print("Saved at ./music/{}.wav".format(name))
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('--url', type=str , help='youtube url', required=True)
-    parser.add_argument('--music_name', type=str, help='music name', required=True)
+    parser.add_argument("--url", type=str, help="youtube url", required=True)
+    parser.add_argument("--music_name", type=str, help="music name", required=True)
     args = parser.parse_args()
 
     # 1. download
-    print('1. download')
-    pytube(url = args.url, name = args.music_name)
+    print("1. download")
+    pytube(url=args.url, name=args.music_name)
 
     # 2. vocal remover

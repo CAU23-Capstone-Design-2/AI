@@ -2,13 +2,14 @@
 # Usage: python uvr.py --model_name HP2_all_vocals --inp_path ./music/voice.wav --save_root_vocal ./vocal --save_root_inst ./inst --agg 10 --format0 wav
 from infer_uvr5 import _audio_pre_, _audio_pre_new
 import ffmpeg
-import os,traceback
+import os, traceback
 import torch
 from multiprocessing import cpu_count
 from i18n import I18nAuto
 
+
 class Config:
-    def __init__(self,device,is_half):
+    def __init__(self, device, is_half):
         self.device = device
         self.is_half = is_half
         self.n_cpu = 0
@@ -83,7 +84,8 @@ class Config:
             x_max = 32
 
         return x_pad, x_query, x_center, x_max
-    
+
+
 i18n = I18nAuto()
 
 torch.manual_seed(114514)
@@ -140,17 +142,17 @@ else:
     gpu_info = i18n("很遗憾您这没有能用的显卡来支持您训练")
     default_batch_size = 1
 gpus = "-".join([i[0] for i in gpu_infos])
-    
-device = 'cuda:0'
+
+device = "cuda:0"
 is_half = True
 
-config=Config(device,is_half)
+config = Config(device, is_half)
 weight_uvr5_root = "uvr5_weights"
 now_dir = os.getcwd()
 tmp = os.path.join(now_dir, "TEMP")
 
 
-def uvr(model_name, inp_path, save_root_vocal, paths, save_root_ins, agg, format0):    
+def uvr(model_name, inp_path, save_root_vocal, paths, save_root_ins, agg, format0):
     infos = []
     try:
         save_root_vocal = (
@@ -161,6 +163,7 @@ def uvr(model_name, inp_path, save_root_vocal, paths, save_root_ins, agg, format
         )
         if model_name == "onnx_dereverb_By_FoxJoy":
             from MDXNet import MDXNetDereverb
+
             pre_fun = MDXNetDereverb(15)
         else:
             func = _audio_pre_ if "DeEcho" not in model_name else _audio_pre_new
@@ -180,9 +183,7 @@ def uvr(model_name, inp_path, save_root_vocal, paths, save_root_ins, agg, format
                 and info["streams"][0]["sample_rate"] == "44100"
             ):
                 need_reformat = 0
-                pre_fun._path_audio_(
-                    inp_path, save_root_ins, save_root_vocal, format0
-                )
+                pre_fun._path_audio_(inp_path, save_root_ins, save_root_vocal, format0)
                 done = 1
         except:
             need_reformat = 1
@@ -196,9 +197,7 @@ def uvr(model_name, inp_path, save_root_vocal, paths, save_root_ins, agg, format
             inp_path = tmp_path
         try:
             if done == 0:
-                pre_fun._path_audio_(
-                    inp_path, save_root_ins, save_root_vocal, format0
-                )
+                pre_fun._path_audio_(inp_path, save_root_ins, save_root_vocal, format0)
             infos.append("%s->Success" % (os.path.basename(inp_path)))
             yield "\n".join(infos)
         except:
@@ -223,23 +222,36 @@ def uvr(model_name, inp_path, save_root_vocal, paths, save_root_ins, agg, format
             torch.cuda.empty_cache()
     yield "\n".join(infos)
 
+
 import argparse
-'''
+
+"""
 python uvr.py --model_name onnx_dereverb_By_FoxJoy --inp_path ./music/voice.wav --save_root_vocal ./vocal --save_root_inst ./inst --agg 10 --format0 wav
-'''
-if __name__ == '__main__':
+"""
+if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('--model_name', type=str , help='model name', required=True)
-    parser.add_argument('--inp_path', type=str , help='input path', required=True)
-    parser.add_argument('--save_root_vocal', type=str , help='save root vocal', required=True)
-    parser.add_argument('--save_root_inst', type=str , help='save root inst', required=True)
-    parser.add_argument('--agg', type=int , help='agg', required=True)
-    parser.add_argument('--format0', type=str , help='format0', required=True)
+    parser.add_argument("--model_name", type=str, help="model name", required=True)
+    parser.add_argument("--inp_path", type=str, help="input path", required=True)
+    parser.add_argument(
+        "--save_root_vocal", type=str, help="save root vocal", required=True
+    )
+    parser.add_argument(
+        "--save_root_inst", type=str, help="save root inst", required=True
+    )
+    parser.add_argument("--agg", type=int, help="agg", required=True)
+    parser.add_argument("--format0", type=str, help="format0", required=True)
     args = parser.parse_args()
-    
+
     # uvr
-    result = uvr(model_name=args.model_name, inp_path=args.inp_path, save_root_vocal=args.save_root_vocal, paths=None, save_root_ins=args.save_root_inst, agg=args.agg, format0=args.format0)
-        
+    result = uvr(
+        model_name=args.model_name,
+        inp_path=args.inp_path,
+        save_root_vocal=args.save_root_vocal,
+        paths=None,
+        save_root_ins=args.save_root_inst,
+        agg=args.agg,
+        format0=args.format0,
+    )
+
     for output in result:
         print(output)
-
